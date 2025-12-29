@@ -5,7 +5,7 @@ const isDevelopment = import.meta.env.MODE === 'development' || window.location.
 
 export const API_BASE_URL = isDevelopment 
   ? 'http://localhost:3000'  // Local backend
-  : import.meta.env.VITE_API_BASE_URL || 'https://student-teacher-backend-avil.onrender.com'; // Production backend
+  : import.meta.env.VITE_API_BASE_URL || 'https://student-teacher-backend-xhrv.onrender.com'; // Production backend
 
 // console.log(' Environment:', {
 //   mode: import.meta.env.MODE,
