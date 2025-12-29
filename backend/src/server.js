@@ -20,12 +20,13 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://anishkumar-student-teacher-managmen.vercel.app/"
+    "https://anishkumar-student-teacher-managmen.vercel.app"
   ],
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization']
-
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
+
 
 //  Body parser
 app.use(express.json());
