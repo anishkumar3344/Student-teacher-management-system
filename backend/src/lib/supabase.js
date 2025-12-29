@@ -49,7 +49,7 @@ export async function signUp(email, password, fullName, role) {
   }
 
   const redirectUrl = process.env.NODE_ENV === 'production'
-    ? 'https://student-teacher-management-system-nine.vercel.app/login'
+    ? 'https://anishkumar-student-teacher-managmen.vercel.app/login'
     : 'http://localhost:5173/login';
 
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
@@ -118,7 +118,7 @@ export async function forgotPassword(email) {
   if (!email) throw new Error('Email is required');
 
   const baseUrl = process.env.NODE_ENV === 'production'
-    ? 'https://student-teacher-management-system-nine.vercel.app'
+    ? 'https://anishkumar-student-teacher-managmen.vercel.app/'
     : 'http://localhost:5173';
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
