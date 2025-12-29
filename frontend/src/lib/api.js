@@ -1,77 +1,171 @@
+
 import { supabase } from './supabase';
 
-// Auto-detect environment and set API URL
-const isDevelopment = import.meta.env.MODE === 'development' || window.location.hostname === 'localhost';
+// --------------------------------------------------
+// Environment Detection (SAFE & CLEAR)
+// --------------------------------------------------
+const isLocalhost = window.location.hostname === 'localhost';
 
-export const API_BASE_URL = isDevelopment 
-  ? 'http://localhost:3000'  // Local backend
-  : import.meta.env.VITE_API_BASE_URL || 'https://student-teacher-backend-xhrv.onrender.com'; // Production backend
+export const API_BASE_URL = isLocalhost
+  ? 'http://localhost:3000' // Local backend
+  : (import.meta.env.VITE_API_BASE_URL || 'https://student-teacher-backend-xhrv.onrender.com'); // Production backend
 
-// console.log(' Environment:', {
-//   mode: import.meta.env.MODE,
-//   hostname: window.location.hostname,
-//   isDevelopment,
-//   apiBaseUrl: API_BASE_URL
-// });
-
+// --------------------------------------------------
+// Generic API Call Helper
+// --------------------------------------------------
 export async function apiCall(endpoint, options = {}) {
-  let { data: { session }, error } = await supabase.auth.getSession();
+  // Get current session
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
-  // Check if session exists and is valid
-  if (!session) {
+  let session = sessionData?.session;
+
+  if (sessionError || !session) {
     console.error(' No session found');
     throw new Error('SESSION_EXPIRED');
   }
 
-  // Check if session is expired
+  // --------------------------------------------------
+  // Refresh token if expired
+  // --------------------------------------------------
   if (session.expires_at && session.expires_at * 1000 < Date.now()) {
-    console.log('Session expired, refreshing...');
-    const refreshResult = await supabase.auth.refreshSession({ 
-      refresh_token: session.refresh_token 
+    console.log('🔄 Session expired, refreshing...');
+
+    const { data, error } = await supabase.auth.refreshSession({
+      refresh_token: session.refresh_token
     });
-    
-    if (refreshResult.error) {
-      console.error(' Refresh failed:', refreshResult.error);
+
+    if (error || !data?.session) {
+      console.error(' Session refresh failed', error);
       throw new Error('SESSION_EXPIRED');
     }
-    session = refreshResult.data.session;
+
+    session = data.session;
     console.log(' Session refreshed');
   }
 
-  const token = session.access_token;
-
+  // --------------------------------------------------
+  // Prepare request
+  // --------------------------------------------------
   const config = {
     method: options.method || 'GET',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
+      'Authorization': `Bearer ${session.access_token}`,
       ...options.headers
     },
     body: options.body ? JSON.stringify(options.body) : undefined
   };
 
-  const fullUrl = `${API_BASE_URL}${endpoint}`;
+  const url = `${API_BASE_URL}${endpoint}`;
 
-  const response = await fetch(fullUrl, config);
+  // --------------------------------------------------
+  // Fetch request
+  // --------------------------------------------------
+  const response = await fetch(url, config);
 
+  // --------------------------------------------------
+  // Auth errors
+  // --------------------------------------------------
   if (response.status === 401) {
-    console.error(' 401 Unauthorized - Backend rejected token');
+    console.error(' 401 Unauthorized');
     throw new Error('SESSION_EXPIRED');
   }
-  
+
   if (response.status === 403) {
     console.error(' 403 Forbidden');
-    throw new Error('Access denied');
+    throw new Error('ACCESS_DENIED');
   }
 
+  // --------------------------------------------------
+  // Parse response
+  // --------------------------------------------------
   const data = await response.json().catch(() => null);
-  
+
   if (!response.ok) {
-    const errorMsg = data?.error || data?.message || `API Error (${response.status})`;
-    console.error(' API Error:', errorMsg, data);
-    throw new Error(errorMsg);
+    const message = data?.error || data?.message || `API Error (${response.status})`;
+    console.error(' API Error:', message);
+    throw new Error(message);
   }
 
-  console.log(' API call successful');
+  console.log(' API call successful:', endpoint);
   return data;
 }
+
+
+// import { supabase } from './supabase';
+
+// // Auto-detect environment and set API URL
+// const isDevelopment = import.meta.env.MODE === 'development' || window.location.hostname === 'localhost';
+
+// export const API_BASE_URL = isDevelopment 
+//   ? 'http://localhost:3000'  // Local backend
+//   : import.meta.env.VITE_API_BASE_URL || 'https://student-teacher-backend-xhrv.onrender.com'; // Production backend
+
+// // console.log(' Environment:', {
+// //   mode: import.meta.env.MODE,
+// //   hostname: window.location.hostname,
+// //   isDevelopment,
+// //   apiBaseUrl: API_BASE_URL
+// // });
+
+// export async function apiCall(endpoint, options = {}) {
+//   let { data: { session }, error } = await supabase.auth.getSession();
+
+//   // Check if session exists and is valid
+//   if (!session) {
+//     console.error(' No session found');
+//     throw new Error('SESSION_EXPIRED');
+//   }
+
+//   // Check if session is expired
+//   if (session.expires_at && session.expires_at * 1000 < Date.now()) {
+//     console.log('Session expired, refreshing...');
+//     const refreshResult = await supabase.auth.refreshSession({ 
+//       refresh_token: session.refresh_token 
+//     });
+    
+//     if (refreshResult.error) {
+//       console.error(' Refresh failed:', refreshResult.error);
+//       throw new Error('SESSION_EXPIRED');
+//     }
+//     session = refreshResult.data.session;
+//     console.log(' Session refreshed');
+//   }
+
+//   const token = session.access_token;
+
+//   const config = {
+//     method: options.method || 'GET',
+//     headers: {
+//       'Content-Type': 'application/json',
+//       'Authorization': `Bearer ${token}`,
+//       ...options.headers
+//     },
+//     body: options.body ? JSON.stringify(options.body) : undefined
+//   };
+
+//   const fullUrl = `${API_BASE_URL}${endpoint}`;
+
+//   const response = await fetch(fullUrl, config);
+
+//   if (response.status === 401) {
+//     console.error(' 401 Unauthorized - Backend rejected token');
+//     throw new Error('SESSION_EXPIRED');
+//   }
+  
+//   if (response.status === 403) {
+//     console.error(' 403 Forbidden');
+//     throw new Error('Access denied');
+//   }
+
+//   const data = await response.json().catch(() => null);
+  
+//   if (!response.ok) {
+//     const errorMsg = data?.error || data?.message || `API Error (${response.status})`;
+//     console.error(' API Error:', errorMsg, data);
+//     throw new Error(errorMsg);
+//   }
+
+//   console.log(' API call successful');
+//   return data;
+// }
