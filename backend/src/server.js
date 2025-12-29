@@ -17,6 +17,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 //  Enable CORS before routes
+// Enable CORS FIRST
 app.use(cors({
   origin: [
     "http://localhost:5173",
@@ -26,7 +27,6 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
-
 
 //  Body parser
 app.use(express.json());
